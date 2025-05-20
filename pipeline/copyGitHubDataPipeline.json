@@ -67,13 +67,37 @@
 							"inputs": [
 								{
 									"referenceName": "DS_Http",
-									"type": "DatasetReference"
+									"type": "DatasetReference",
+									"parameters": {
+										"fileName": {
+											"value": "@item().FileName",
+											"type": "Expression"
+										},
+										"baseUrl": {
+											"value": "https://github.com/",
+											"type": "Expression"
+										}
+									}
 								}
 							],
 							"outputs": [
 								{
 									"referenceName": "DS_Datalake",
-									"type": "DatasetReference"
+									"type": "DatasetReference",
+									"parameters": {
+										"ContainerName": {
+											"value": "@item().ContainerName",
+											"type": "Expression"
+										},
+										"FolderName": {
+											"value": "@item().FolderName",
+											"type": "Expression"
+										},
+										"FileName": {
+											"value": "@item().FileName",
+											"type": "Expression"
+										}
+									}
 								}
 							]
 						}
