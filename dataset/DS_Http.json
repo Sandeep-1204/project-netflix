@@ -1,0 +1,39 @@
+{
+	"name": "DS_Http",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "http_con",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"BaseUrl": {
+					"value": "@dataset().baseUrl",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"fileName": {
+				"type": "string"
+			},
+			"baseUrl": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "HttpServerLocation",
+				"relativeUrl": {
+					"value": "@Sandeep-1204/adf-project-netflix-san/refs/heads/main/raw-files/dataset().fileName",
+					"type": "Expression"
+				}
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": []
+	}
+}
