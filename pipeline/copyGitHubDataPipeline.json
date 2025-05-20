@@ -74,7 +74,7 @@
 											"type": "Expression"
 										},
 										"baseUrl": {
-											"value": "https://github.com/",
+											"value": "https://raw.githubusercontent.com/",
 											"type": "Expression"
 										}
 									}
@@ -186,7 +186,34 @@
 		],
 		"parameters": {
 			"filePath_array": {
-				"type": "array"
+				"type": "array",
+				"defaultValue": [
+					{
+						"ContainerName": "bronze",
+						"FolderName": "netflix_cast",
+						"FileName": "netflix_cast.csv"
+					},
+					{
+						"ContainerName": "bronze",
+						"FolderName": "netflix_category",
+						"FileName": "netflix_category.csv"
+					},
+					{
+						"ContainerName": "bronze",
+						"FolderName": "netflix_countries",
+						"FileName": "netflix_countries.csv"
+					},
+					{
+						"ContainerName": "bronze",
+						"FolderName": "netflix_directors",
+						"FileName": "netflix_directors.csv"
+					},
+					{
+						"ContainerName": "bronze",
+						"FolderName": "netflix_titles",
+						"FileName": "netflix_titles.csv"
+					}
+				]
 			}
 		},
 		"variables": {
