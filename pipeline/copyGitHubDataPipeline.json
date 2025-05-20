@@ -1,0 +1,176 @@
+{
+	"name": "copyGitHubDataPipeline",
+	"properties": {
+		"activities": [
+			{
+				"name": "ForEach1",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "ValidateTitleFile",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@pipeline().parameters.filePath_array",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "CopyGitHubData",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "DelimitedTextSource",
+									"storeSettings": {
+										"type": "HttpReadSettings",
+										"requestMethod": "GET"
+									},
+									"formatSettings": {
+										"type": "DelimitedTextReadSettings"
+									}
+								},
+								"sink": {
+									"type": "DelimitedTextSink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									},
+									"formatSettings": {
+										"type": "DelimitedTextWriteSettings",
+										"quoteAllText": true,
+										"fileExtension": ".txt"
+									}
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "DS_Http",
+									"type": "DatasetReference"
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "DS_Datalake",
+									"type": "DatasetReference"
+								}
+							]
+						}
+					]
+				}
+			},
+			{
+				"name": "ValidateTitleFile",
+				"type": "Validation",
+				"dependsOn": [
+					{
+						"activity": "SetGitHubVariable",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "DS_Datalake",
+						"type": "DatasetReference",
+						"parameters": {
+							"ContainerName": {
+								"value": "raw",
+								"type": "Expression"
+							},
+							"FolderName": {
+								"value": "Netflix-title",
+								"type": "Expression"
+							},
+							"FileName": {
+								"value": "netflix_titles.csv",
+								"type": "Expression"
+							}
+						}
+					},
+					"timeout": "0.12:00:00",
+					"sleep": 10
+				}
+			},
+			{
+				"name": "GetGitHubMetaData",
+				"type": "WebActivity",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"method": "GET",
+					"url": {
+						"value": "https://github.com/Sandeep-1204/adf-project-netflix-san/tree/main/raw-files",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "SetGitHubVariable",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "GetGitHubMetaData",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "gitHubMetaData",
+					"value": {
+						"value": "@activity('GetGitHubMetaData').output.Response",
+						"type": "Expression"
+					}
+				}
+			}
+		],
+		"parameters": {
+			"filePath_array": {
+				"type": "array"
+			}
+		},
+		"variables": {
+			"gitHubMetaData": {
+				"type": "String",
+				"defaultValue": "[  {\"ContainerName\":\"bronze\",   \"FolderName\":\"netflix_cast\",   \"FileName\":\"netflix_cast.csv\"  },  {\"ContainerName\":\"bronze\",   \"FolderName\":\"netflix_category\",   \"FileName\":\"netflix_category.csv\"  },  {\"ContainerName\":\"bronze\",   \"FolderName\":\"netflix_countries\",   \"FileName\":\"netflix_countries.csv\"  },  {\"ContainerName\":\"bronze\",   \"FolderName\":\"netflix_directors\",   \"FileName\":\"netflix_directors.csv\"  },  {\"ContainerName\":\"bronze\",   \"FolderName\":\"netflix_titles\",   \"FileName\":\"netflix_titles.csv\"  } ]"
+			}
+		},
+		"annotations": []
+	}
+}
