@@ -1,0 +1,24 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "adf-project-netflix-san"
+		},
+		"datalake_con_accountKey": {
+			"value": ""
+		},
+		"datalake_con_properties_typeProperties_url": {
+			"value": "https://netflixprojectsan.dfs.core.windows.net/"
+		},
+		"http_con_properties_typeProperties_url": {
+			"value": "@{linkedService().BaseUrl}"
+		},
+		"containerUri": {
+			"value": ""
+		},
+		"containerSasToken": {
+			"value": ""
+		}
+	}
+}

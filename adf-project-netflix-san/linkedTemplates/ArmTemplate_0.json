@@ -1,0 +1,395 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "adf-project-netflix-san"
+		},
+		"datalake_con_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'datalake_con'"
+		},
+		"datalake_con_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://netflixprojectsan.dfs.core.windows.net/"
+		},
+		"http_con_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "@{linkedService().BaseUrl}"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/datalake_con')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('datalake_con_properties_typeProperties_url')]",
+					"accountKey": {
+						"type": "SecureString",
+						"value": "[parameters('datalake_con_accountKey')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/http_con')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"parameters": {
+					"BaseUrl": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "HttpServer",
+				"typeProperties": {
+					"url": "[parameters('http_con_properties_typeProperties_url')]",
+					"enableServerCertificateValidation": true,
+					"authenticationType": "Anonymous"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_Datalake')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "datalake_con",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"ContainerName": {
+						"type": "string"
+					},
+					"FolderName": {
+						"type": "string"
+					},
+					"FileName": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().FileName",
+							"type": "Expression"
+						},
+						"folderPath": {
+							"value": "@dataset().FolderName",
+							"type": "Expression"
+						},
+						"fileSystem": {
+							"value": "@dataset().ContainerName",
+							"type": "Expression"
+						}
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/datalake_con')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_Http')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "http_con",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"BaseUrl": {
+							"value": "@dataset().baseUrl",
+							"type": "Expression"
+						}
+					}
+				},
+				"parameters": {
+					"fileName": {
+						"type": "string"
+					},
+					"baseUrl": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "HttpServerLocation",
+						"relativeUrl": {
+							"value": "@concat('Sandeep-1204/adf-project-netflix-san/refs/heads/main/raw-files/',dataset().fileName)",
+							"type": "Expression"
+						}
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/http_con')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/copyGitHubDataPipeline')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "ForEach1",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "ValidateTitleFile",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@pipeline().parameters.filePath_array",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "CopyGitHubData",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "DelimitedTextSource",
+											"storeSettings": {
+												"type": "HttpReadSettings",
+												"requestMethod": "GET"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextReadSettings"
+											}
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ".txt"
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "DS_Http",
+											"type": "DatasetReference",
+											"parameters": {
+												"fileName": {
+													"value": "@item().FileName",
+													"type": "Expression"
+												},
+												"baseUrl": {
+													"value": "https://raw.githubusercontent.com/",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "DS_Datalake",
+											"type": "DatasetReference",
+											"parameters": {
+												"ContainerName": {
+													"value": "@item().ContainerName",
+													"type": "Expression"
+												},
+												"FolderName": {
+													"value": "@item().FolderName",
+													"type": "Expression"
+												},
+												"FileName": {
+													"value": "@item().FileName",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								}
+							]
+						}
+					},
+					{
+						"name": "ValidateTitleFile",
+						"type": "Validation",
+						"dependsOn": [
+							{
+								"activity": "SetGitHubVariable",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "DS_Datalake",
+								"type": "DatasetReference",
+								"parameters": {
+									"ContainerName": {
+										"value": "raw",
+										"type": "Expression"
+									},
+									"FolderName": {
+										"value": "Netflix-title",
+										"type": "Expression"
+									},
+									"FileName": {
+										"value": "netflix_titles.csv",
+										"type": "Expression"
+									}
+								}
+							},
+							"timeout": "0.12:00:00",
+							"sleep": 10
+						}
+					},
+					{
+						"name": "GetGitHubMetaData",
+						"type": "WebActivity",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"method": "GET",
+							"headers": {},
+							"url": {
+								"value": "https://github.com/Sandeep-1204/adf-project-netflix-san/tree/main/raw-files",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "SetGitHubVariable",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "GetGitHubMetaData",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "gitHubMetaData",
+							"value": {
+								"value": "@activity('GetGitHubMetaData').output.Response",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"filePath_array": {
+						"type": "array",
+						"defaultValue": [
+							{
+								"ContainerName": "bronze",
+								"FolderName": "netflix_cast",
+								"FileName": "netflix_cast.csv"
+							},
+							{
+								"ContainerName": "bronze",
+								"FolderName": "netflix_category",
+								"FileName": "netflix_category.csv"
+							},
+							{
+								"ContainerName": "bronze",
+								"FolderName": "netflix_countries",
+								"FileName": "netflix_countries.csv"
+							},
+							{
+								"ContainerName": "bronze",
+								"FolderName": "netflix_directors",
+								"FileName": "netflix_directors.csv"
+							},
+							{
+								"ContainerName": "bronze",
+								"FolderName": "netflix_titles",
+								"FileName": "netflix_titles.csv"
+							}
+						]
+					}
+				},
+				"variables": {
+					"gitHubMetaData": {
+						"type": "String",
+						"defaultValue": "[[  {\"ContainerName\":\"bronze\",   \"FolderName\":\"netflix_cast\",   \"FileName\":\"netflix_cast.csv\"  },  {\"ContainerName\":\"bronze\",   \"FolderName\":\"netflix_category\",   \"FileName\":\"netflix_category.csv\"  },  {\"ContainerName\":\"bronze\",   \"FolderName\":\"netflix_countries\",   \"FileName\":\"netflix_countries.csv\"  },  {\"ContainerName\":\"bronze\",   \"FolderName\":\"netflix_directors\",   \"FileName\":\"netflix_directors.csv\"  },  {\"ContainerName\":\"bronze\",   \"FolderName\":\"netflix_titles\",   \"FileName\":\"netflix_titles.csv\"  } ]"
+					}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/DS_Datalake')]",
+				"[concat(variables('factoryId'), '/datasets/DS_Http')]"
+			]
+		}
+	]
+}
