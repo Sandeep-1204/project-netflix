@@ -1,0 +1,17 @@
+{
+	"name": "http_con",
+	"properties": {
+		"parameters": {
+			"BaseUrl": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "HttpServer",
+		"typeProperties": {
+			"url": "@{linkedService().BaseUrl}",
+			"enableServerCertificateValidation": true,
+			"authenticationType": "Anonymous"
+		}
+	}
+}
