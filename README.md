@@ -46,7 +46,7 @@ Transformed, ready-to-consume data is written to Delta Live Tables.
 
 ## Power BI Integration:
 
-Delta tables from the silver layer feed into Power BI dashboards.
+Delta tables from the gold layer feed into Power BI dashboards.
 
 This enables real-time, actionable insights on Netflix data.
 
