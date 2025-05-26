@@ -1,5 +1,5 @@
 {
-  "name": "WF_GetTitleFileToSilverNotebook",
+  "name": "WF_CopyBronzeFilesToSilverStage",
   "email_notifications": {
     "no_alert_for_skipped_runs": false
   },
@@ -8,13 +8,10 @@
   "max_concurrent_runs": 1,
   "tasks": [
     {
-      "task_key": "Weekday_lookup",
+      "task_key": "FolderNameLookup",
       "run_if": "ALL_SUCCESS",
       "notebook_task": {
-        "notebook_path": "/Repos/sandeepadhi1@outlook.com/project-netflix/databricks-notebooks/Title-transformation-run-lookup",
-        "base_parameters": {
-          "weekday": "{{job.start_time.iso_weekday}}"
-        },
+        "notebook_path": "/Repos/sandeepadhi1@outlook.com/project-netflix/databricks-notebooks/array_notebook",
         "source": "WORKSPACE"
       },
       "existing_cluster_id": "0521-071110-pnw90ont",
@@ -23,59 +20,42 @@
       "webhook_notifications": {}
     },
     {
-      "task_key": "Check_if_sunday",
+      "task_key": "SilverNotebook",
       "depends_on": [
         {
-          "task_key": "Weekday_lookup"
+          "task_key": "FolderNameLookup"
         }
       ],
       "run_if": "ALL_SUCCESS",
-      "condition_task": {
-        "op": "EQUAL_TO",
-        "left": "{{tasks.Weekday_lookup.values.weekoutput}}",
-        "right": "7"
-      },
-      "timeout_seconds": 0,
-      "email_notifications": {},
-      "webhook_notifications": {}
-    },
-    {
-      "task_key": "Silver_stage_title_file_transformation",
-      "depends_on": [
-        {
-          "task_key": "Check_if_sunday",
-          "outcome": "true"
+      "for_each_task": {
+        "inputs": "{{tasks.FolderNameLookup.values.my_arr}}",
+        "task": {
+          "task_key": "SilverNotebook_iteration",
+          "run_if": "ALL_SUCCESS",
+          "notebook_task": {
+            "notebook_path": "/Repos/sandeepadhi1@outlook.com/project-netflix/databricks-notebooks/silver_stage_notebook",
+            "base_parameters": {
+              "source": "{{input.source}}",
+              "target": "{{input.target}}"
+            },
+            "source": "WORKSPACE"
+          },
+          "existing_cluster_id": "0521-071110-pnw90ont",
+          "timeout_seconds": 0,
+          "email_notifications": {},
+          "webhook_notifications": {}
         }
-      ],
-      "run_if": "ALL_SUCCESS",
-      "notebook_task": {
-        "notebook_path": "/Repos/sandeepadhi1@outlook.com/project-netflix/databricks-notebooks/Silver_stage_transformation",
-        "source": "WORKSPACE"
       },
-      "existing_cluster_id": "0521-071110-pnw90ont",
-      "timeout_seconds": 0,
-      "email_notifications": {},
-      "webhook_notifications": {}
-    },
-    {
-      "task_key": "FalseNotebook",
-      "depends_on": [
-        {
-          "task_key": "Check_if_sunday",
-          "outcome": "false"
-        }
-      ],
-      "run_if": "ALL_SUCCESS",
-      "notebook_task": {
-        "notebook_path": "/Repos/sandeepadhi1@outlook.com/project-netflix/databricks-notebooks/weekday_number_lookup",
-        "source": "WORKSPACE"
-      },
-      "existing_cluster_id": "0521-071110-pnw90ont",
       "timeout_seconds": 0,
       "email_notifications": {},
       "webhook_notifications": {}
     }
   ],
+  "git_source": {
+    "git_url": "https://github.com/Sandeep-1204/project-netflix.git",
+    "git_provider": "gitHub",
+    "git_commit": "main"
+  },
   "queue": {
     "enabled": true
   },
